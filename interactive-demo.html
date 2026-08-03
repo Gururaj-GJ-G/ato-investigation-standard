@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZAIS — Account Takeover Investigation Standard</title>
+<meta name="description" content="ZAIS is a structured methodology for investigating, explaining, and defending account takeover decisions. 42 deterministic signals, 3 playbooks.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --accent: #c8a96e;
+  --accent-d: #a8894e;
+  --navy: #1B3A5C;
+  --bg: #06080d;
+  --bg1: #0d1018;
+  --bg2: #111520;
+  --border: #1e2229;
+  --border2: #2a3040;
+  --text: #e8eaf0;
+  --muted: #7a8090;
+  --green: #3ecf8e;
+  --red: #e05252;
+  --amber: #E8953A;
+  --blue: #5b8ef5;
+  --purple: #a78bfa;
+  --teal: #2dd4bf;
+  --pink: #f472b6;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+  line-height:1.65;
+  overflow-x:hidden;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:#1e2535;border-radius:99px;}
+
+/* ── NAV ── */
+nav{position:sticky;top:0;z-index:100;background:rgba(6,8,13,0.97);border-bottom:1px solid rgba(30,34,41,0.8);padding:0;backdrop-filter:blur(20px);}
+.nav-inner{max-width:1280px;margin:0 auto;padding:0.85rem 2rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;}
+.nav-logo{font-family:'Inter',sans-serif;font-size:1rem;font-weight:800;letter-spacing:0.12em;color:#e8e8e8;text-decoration:none;}
+.nav-logo span{color:var(--accent);}
+.nav-links{list-style:none;display:flex;align-items:center;gap:1.9rem;}
+.nav-links>li>a{color:#7a8090;font-size:0.84rem;font-weight:500;text-decoration:none;transition:color 0.15s;}
+.nav-links>li>a:hover{color:#e8e8e8;}
+.nav-actions{display:flex;align-items:center;gap:0.85rem;}
+.nav-cta{background:var(--accent)!important;color:#0a0a0a!important;padding:0.5rem 1.1rem;border-radius:4px;font-weight:700;font-size:0.8rem!important;white-space:nowrap;text-decoration:none;}
+.nav-toggle{display:none;background:none;border:none;color:#e8e8e8;font-size:1.4rem;cursor:pointer;}
+@media(max-width:768px){
+  .nav-links{display:none;position:absolute;top:100%;left:0;right:0;background:rgba(6,8,13,0.99);border-bottom:1px solid #1e2229;flex-direction:column;align-items:flex-start;padding:1rem 2rem;gap:0.9rem;}
+  .nav-links.open{display:flex;}
+  .nav-toggle{display:block;}
+  .nav-actions{width:100%;}
+}
+
+/* ── SECTIONS ── */
+.wrap{max-width:1100px;margin:0 auto;padding:0 2rem;}
+.sec{padding:5rem 0;}
+.sec-sm{padding:3rem 0;}
+.sec-tag{font-size:0.65rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);margin-bottom:0.75rem;}
+.sec-h{font-family:'Space Grotesk',sans-serif;font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:700;letter-spacing:-0.03em;color:#fff;line-height:1.15;margin-bottom:1rem;}
+.sec-sub{font-size:1rem;color:var(--muted);max-width:600px;line-height:1.75;}
+.divider{border:none;border-top:1px solid var(--border);margin:0;}
+
+/* ── HERO ── */
+#hero{
+  position:relative;
+  padding:6rem 0 5rem;
+  background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(27,58,92,0.35) 0%,transparent 70%);
+  overflow:hidden;
+}
+#hero-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0.6;}
+.hero-inner{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:0 2rem;}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(200,169,110,0.08);border:1px solid rgba(200,169,110,0.25);
+  border-radius:999px;padding:4px 14px 4px 8px;
+  font-size:0.72rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);
+  margin-bottom:1.5rem;
+}
+.hero-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.4;transform:scale(0.85);}}
+.hero-h{
+  font-family:'Space Grotesk',sans-serif;
+  font-size:clamp(2.4rem,5vw,4rem);font-weight:700;letter-spacing:-0.04em;
+  color:#fff;line-height:1.08;margin-bottom:1.25rem;max-width:820px;
+}
+.hero-h em{color:var(--accent);font-style:normal;}
+.hero-sub{font-size:1.05rem;color:#9aa3b0;line-height:1.75;max-width:580px;margin-bottom:2rem;}
+.hero-pills{display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:2.5rem;}
+.pill{
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(255,255,255,0.04);border:1px solid var(--border2);
+  border-radius:999px;padding:4px 12px;font-size:0.78rem;color:#9aa3b0;font-weight:500;
+}
+.pill-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.hero-actions{display:flex;flex-wrap:wrap;gap:0.75rem;}
+.btn-gold{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--accent);color:#0a0a0a;padding:0.8rem 1.8rem;
+  border-radius:6px;font-weight:800;font-size:0.9rem;text-decoration:none;
+  transition:opacity .15s,transform .15s;
+}
+.btn-gold:hover{opacity:0.88;transform:translateY(-1px);}
+.btn-outline{
+  display:inline-flex;align-items:center;gap:8px;
+  background:transparent;color:var(--text);padding:0.8rem 1.8rem;
+  border-radius:6px;font-weight:600;font-size:0.9rem;text-decoration:none;
+  border:1px solid var(--border2);transition:border-color .15s,color .15s;
+}
+.btn-outline:hover{border-color:rgba(200,169,110,0.5);color:var(--accent);}
+.hero-stats{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+  gap:1px;background:var(--border);border:1px solid var(--border);
+  border-radius:12px;overflow:hidden;margin-top:4rem;
+}
+.stat-cell{background:var(--bg1);padding:1.2rem 1.5rem;}
+.stat-n{font-family:'Space Grotesk',sans-serif;font-size:2rem;font-weight:700;color:#fff;letter-spacing:-0.03em;line-height:1;}
+.stat-l{font-size:0.72rem;color:var(--muted);margin-top:0.3rem;font-weight:500;letter-spacing:0.04em;}
+
+/* ── WHY SECTION ── */
+.why-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;margin-top:2.5rem;}
+.why-card{
+  background:var(--bg1);border:1px solid var(--border);border-radius:12px;padding:1.5rem;
+  position:relative;overflow:hidden;
+}
+.why-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--card-color,var(--border));
+}
+.why-icon{font-size:1.5rem;margin-bottom:0.75rem;}
+.why-title{font-size:0.95rem;font-weight:700;color:#fff;margin-bottom:0.4rem;}
+.why-body{font-size:0.83rem;color:var(--muted);line-height:1.65;}
+.why-tag{
+  display:inline-block;margin-top:0.75rem;
+  font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+  padding:2px 8px;border-radius:4px;
+  background:rgba(224,82,82,0.1);color:#e05252;border:1px solid rgba(224,82,82,0.2);
+}
+
+/* ── ARCHITECTURE ── */
+.arch-canvas-wrap{
+  background:var(--bg1);border:1px solid var(--border);border-radius:14px;
+  overflow:hidden;margin:2rem 0;box-shadow:0 8px 40px rgba(0,0,0,0.4);
+}
+.arch-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-top:1rem;}
+.arch-step{background:var(--bg1);padding:1.2rem;position:relative;}
+.arch-step-n{font-size:0.65rem;font-weight:700;letter-spacing:0.14em;color:var(--muted);margin-bottom:0.4rem;}
+.arch-step-t{font-size:0.88rem;font-weight:700;color:#fff;margin-bottom:0.25rem;}
+.arch-step-d{font-size:0.76rem;color:var(--muted);line-height:1.55;}
+.arch-step.active{background:rgba(27,58,92,0.3);}
+.arch-step.active::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent);}
+
+/* ── SIGNAL LIBRARY ── */
+.sig-filters{display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1.5rem;}
+.sig-filter{
+  padding:5px 14px;border-radius:999px;font-size:0.76rem;font-weight:600;cursor:pointer;
+  background:var(--bg1);border:1px solid var(--border2);color:var(--muted);
+  transition:all .15s;
+}
+.sig-filter:hover{color:var(--text);border-color:var(--border2);}
+.sig-filter.active{background:rgba(200,169,110,0.12);border-color:rgba(200,169,110,0.4);color:var(--accent);}
+.sig-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:0.75rem;}
+.sig-card{
+  background:var(--bg1);border:1px solid var(--border);border-radius:10px;
+  padding:1rem 1.1rem;cursor:pointer;transition:border-color .15s,transform .15s;
+  position:relative;
+}
+.sig-card:hover{border-color:var(--border2);transform:translateY(-1px);}
+.sig-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:0.5rem;}
+.sig-id{font-size:0.68rem;font-weight:700;letter-spacing:0.1em;color:var(--muted);font-family:monospace;}
+.sig-weight{
+  font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:4px;flex-shrink:0;
+  background:rgba(224,82,82,0.1);color:#e05252;
+}
+.sig-weight.med{background:rgba(232,149,58,0.1);color:var(--amber);}
+.sig-weight.low{background:rgba(62,207,142,0.1);color:var(--green);}
+.sig-name{font-size:0.88rem;font-weight:600;color:#fff;margin-bottom:0.3rem;line-height:1.3;}
+.sig-trigger{font-size:0.75rem;color:var(--muted);line-height:1.55;}
+.sig-domain-badge{
+  display:inline-flex;align-items:center;gap:4px;margin-top:0.5rem;
+  font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+  padding:2px 7px;border-radius:3px;
+}
+.sig-count{font-size:0.78rem;color:var(--muted);margin-bottom:1rem;}
+
+/* ── ATTACK GRAPH ── */
+.attack-chain{
+  background:var(--bg1);border:1px solid var(--border);border-radius:14px;
+  padding:2rem;margin-top:1.5rem;
+  background:linear-gradient(145deg,#0d1420,#0a0f18);
+}
+.chain-nodes{display:flex;flex-direction:column;gap:0;max-width:540px;margin:0 auto;}
+.chain-node{display:flex;align-items:flex-start;gap:16px;padding:1rem 0;position:relative;}
+.chain-node:not(:last-child)::after{
+  content:'';position:absolute;left:17px;top:48px;bottom:-8px;
+  width:2px;background:linear-gradient(to bottom,var(--node-color,#334155),transparent);
+}
+.chain-icon{
+  width:36px;height:36px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(var(--node-rgb,50,80,120),0.15);
+  border:1.5px solid var(--node-color,#334155);font-size:0.85rem;
+  box-shadow:0 0 12px rgba(var(--node-rgb,50,80,120),0.2);
+}
+.chain-content{flex:1;padding-top:6px;}
+.chain-label{font-size:0.65rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:2px;}
+.chain-title{font-size:0.92rem;font-weight:600;color:#fff;margin-bottom:2px;}
+.chain-sig{font-size:0.72rem;color:var(--muted);font-family:monospace;}
+
+/* ── PLAYBOOKS ── */
+.pb-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1rem;margin-top:2rem;}
+.pb-card{
+  background:var(--bg1);border:1px solid var(--border);border-radius:12px;
+  padding:1.5rem;position:relative;overflow:hidden;
+  transition:border-color .2s,transform .15s;
+}
+.pb-card:hover{border-color:var(--border2);transform:translateY(-2px);}
+.pb-num{
+  font-family:'Space Grotesk',sans-serif;font-size:2.5rem;font-weight:700;
+  color:rgba(255,255,255,0.05);position:absolute;top:1rem;right:1.2rem;
+  letter-spacing:-0.05em;line-height:1;
+}
+.pb-tag-top{font-size:0.63rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:0.6rem;}
+.pb-title{font-size:1rem;font-weight:700;color:#fff;margin-bottom:0.5rem;}
+.pb-body{font-size:0.82rem;color:var(--muted);line-height:1.65;margin-bottom:1rem;}
+.pb-steps{display:flex;flex-direction:column;gap:0.3rem;}
+.pb-step{font-size:0.76rem;color:var(--muted);display:flex;align-items:flex-start;gap:8px;}
+.pb-step::before{content:'→';color:var(--accent);flex-shrink:0;}
+
+/* ── MATURITY SECTION ── */
+.maturity-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-top:2rem;}
+.mat-card{
+  background:var(--bg1);border:1px solid var(--border);border-radius:10px;
+  padding:1.25rem 1rem;text-align:center;
+}
+.mat-score{
+  font-family:'Space Grotesk',sans-serif;font-size:2.2rem;font-weight:700;
+  letter-spacing:-0.03em;line-height:1;margin-bottom:0.2rem;
+}
+.mat-label{font-size:0.72rem;color:var(--muted);font-weight:600;letter-spacing:0.06em;text-transform:uppercase;}
+.mat-bar{background:var(--border);border-radius:999px;height:3px;margin-top:0.75rem;overflow:hidden;}
+.mat-fill{height:100%;border-radius:999px;transition:width 1.2s cubic-bezier(.16,1,.3,1);width:0%;}
+.mat-note{font-size:0.72rem;color:var(--muted);margin-top:0.4rem;}
+
+/* ── CTA ── */
+.cta-block{
+  background:linear-gradient(135deg,rgba(27,58,92,0.25) 0%,rgba(16,19,24,0.8) 100%);
+  border:1px solid rgba(200,169,110,0.2);border-radius:16px;
+  padding:3.5rem 2rem;text-align:center;position:relative;overflow:hidden;
+}
+.cta-block::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 60% 70% at 50% 50%,rgba(200,169,110,0.04) 0%,transparent 70%);
+  pointer-events:none;
+}
+.cta-block>*{position:relative;}
+
+/* ── RBI TABLE ── */
+.rbi-table{width:100%;border-collapse:collapse;margin-top:1.5rem;font-size:0.84rem;}
+.rbi-table th{background:var(--bg2);color:var(--accent);font-weight:700;font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);}
+.rbi-table td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--muted);vertical-align:top;line-height:1.55;}
+.rbi-table tr:last-child td{border-bottom:none;}
+.rbi-table tr:hover td{background:rgba(255,255,255,0.02);}
+.rbi-table td:first-child{color:var(--text);font-weight:500;}
+.rbi-code{font-family:monospace;font-size:0.75rem;color:var(--accent);background:rgba(200,169,110,0.08);padding:1px 6px;border-radius:3px;}
+
+/* ── DOMAIN COLORS ── */
+.dom-DEVICE{background:rgba(91,142,245,0.1);color:#5b8ef5;border-color:rgba(91,142,245,0.3);}
+.dom-NETWORK{background:rgba(167,139,250,0.1);color:#a78bfa;border-color:rgba(167,139,250,0.3);}
+.dom-BEHAVIORAL{background:rgba(245,200,66,0.1);color:#f5c842;border-color:rgba(245,200,66,0.3);}
+.dom-TRANSACTIONAL{background:rgba(45,212,191,0.1);color:#2dd4bf;border-color:rgba(45,212,191,0.3);}
+.dom-SESSION{background:rgba(244,114,182,0.1);color:#f472b6;border-color:rgba(244,114,182,0.3);}
+.dom-AUTH{background:rgba(232,149,58,0.1);color:#E8953A;border-color:rgba(232,149,58,0.3);}
+
+@media(max-width:640px){
+  .hero-h{font-size:2rem;}
+  .sig-grid{grid-template-columns:1fr;}
+  .chain-nodes{max-width:100%;}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;}
+}
+</style>
+  
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav-inner" style="display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;">
+  <a href="https://github.com/Gururaj-GJ-G" style="color:#e8eaf0;font-weight:800;letter-spacing:.08em;text-decoration:none;">Fraud Portfolio</a>
+  <a href="https://github.com/Gururaj-GJ-G/ato-investigation-standard" style="color:#c8a96e;font-size:0.85rem;text-decoration:none;">View source on GitHub →</a>
+</nav>
+
+<!-- ════════════════════ HERO ════════════════════ -->
+<section id="hero">
+  <canvas id="hero-canvas" aria-hidden="true"></canvas>
+  <div class="hero-inner">
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>
+      Independent Methodology · v1.0
+    </div>
+    <h1 class="hero-h">
+      Account takeover is not a<br><em>transaction problem.</em><br>It's an investigation problem.
+    </h1>
+    <p class="hero-sub">
+    ZAIS™ is an RBI-implemented, globally structured fraud investigation methodology designed to support multi-jurisdictional regulatory environments including PSD2/SCA and MAS TRM.
+    </p>
+    <div class="hero-pills">
+      <span class="pill"><span class="pill-dot" style="background:#5b8ef5;"></span>42 deterministic signals</span>
+      <span class="pill"><span class="pill-dot" style="background:#a78bfa;"></span>6 detection domains</span>
+      <span class="pill"><span class="pill-dot" style="background:#3ecf8e;"></span>3 investigation playbooks</span>
+      <span class="pill"><span class="pill-dot" style="background:#3ecf8e;"></span>RBI-primary · globally structured</span>
+      <span class="pill"><span class="pill-dot" style="background:#e05252;"></span>Explainable decisions</span>
+    </div>
+    <div class="hero-actions">
+      <a href="#assessment" class="btn-gold">Get a ZAIS Maturity Assessment →</a>
+      <a href="#signals" class="btn-outline">Browse the Signal Library</a>
+    </div>
+    <div class="hero-stats reveal">
+      <div class="stat-cell">
+        <div class="stat-n" style="color:#5b8ef5;">42</div>
+        <div class="stat-l">Deterministic signals</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-n" style="color:#a78bfa;">6</div>
+        <div class="stat-l">Detection domains</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-n" style="color:#c8a96e;">3</div>
+        <div class="stat-l">Investigation playbooks</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-n" style="color:#3ecf8e;">5</div>
+        <div class="stat-l">Maturity dimensions</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-n" style="color:#E8953A;">10</div>
+        <div class="stat-l">High-confidence combos</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ════════════════════ WHY ATO FAILS ════════════════════ -->
+<section class="sec" id="why">
+  <div class="wrap">
+    <div class="sec-tag reveal">The Problem</div>
+    <h2 class="sec-h reveal">Why ATO investigations fail at most NBFCs</h2>
+    <p class="sec-sub reveal">Most digital lenders have alerts. Very few have a structured way to investigate, explain, and defend what happened.</p>
+    <div class="why-grid" style="margin-top:2.5rem;">
+      <div class="why-card reveal" style="--card-color:#e05252;">
+        <div class="why-icon">🔇</div>
+        <div class="why-title">Signals fire, nothing connects them</div>
+        <div class="why-body">Individual alerts exist for device drift, SIM change, velocity. But there's no framework connecting them into an attack chain. Analysts see 47 alerts, not one ATO event.</div>
+        <div class="why-tag">Coverage gap</div>
+      </div>
+      <div class="why-card reveal" style="--card-color:#E8953A;">
+        <div class="why-icon">📊</div>
+        <div class="why-title">No explainability for decisions made</div>
+        <div class="why-body">Regulators ask: "Why did you block this customer?" The answer is a model score. No signal breakdown, no weight rationale, no audit-ready narrative. That's a regulatory liability.</div>
+        <div class="why-tag">Regulatory risk</div>
+      </div>
+      <div class="why-card reveal" style="--card-color:#f5c842;">
+        <div class="why-icon">🗂️</div>
+        <div class="why-title">Evidence can't be replayed later</div>
+        <div class="why-body">A customer disputes a block 3 months later. The analyst who closed the case is gone. The evidence is in a spreadsheet on their laptop. You cannot defend what you cannot reconstruct.</div>
+        <div class="why-tag">Evidence gap</div>
+      </div>
+      <div class="why-card reveal" style="--card-color:#a78bfa;">
+        <div class="why-icon">📐</div>
+        <div class="why-title">Investigation quality is unmeasured</div>
+        <div class="why-body">Nobody knows if Case A was investigated as thoroughly as Case B. There's no quality standard, no completeness scoring, no consistency check. You find out the quality was bad when a regulator tells you.</div>
+        <div class="why-tag">Quality gap</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ════════════════════ ARCHITECTURE ════════════════════ -->
+<section class="sec" id="architecture">
+  <div class="wrap">
+    <div class="sec-tag reveal">How ZAIS Works</div>
+    <h2 class="sec-h reveal">From ATO event to defensible decision</h2>
+    <p class="sec-sub reveal">ZAIS structures the full journey — detection, investigation, explainability, evidence, and regulatory mapping — as a connected methodology, not isolated tools.</p>
+
+    <div class="arch-canvas-wrap">
+      <canvas id="arch-canvas" style="display:block;width:100%;height:220px;"></canvas>
+    </div>
+
+    <div class="arch-steps reveal">
+      <div class="arch-step">
+        <div class="arch-step-n">ZAIS-100</div>
+        <div class="arch-step-t">Signal Library</div>
+        <div class="arch-step-d">40 signals across 6 domains fire against telemetry in real-time or batch</div>
+      </div>
+      <div class="arch-step">
+        <div class="arch-step-n">ZAIS-200</div>
+        <div class="arch-step-t">Investigation Playbooks</div>
+        <div class="arch-step-d">Signal combinations trigger specific playbooks with step-by-step execution protocols</div>
+      </div>
+      <div class="arch-step active">
+        <div class="arch-step-n">ZAIS-300</div>
+        <div class="arch-step-t">Explainability</div>
+        <div class="arch-step-d">Every decision produces a structured narrative: which signals fired, at what weight, why</div>
+      </div>
+      <div class="arch-step">
+        <div class="arch-step-n">ZAIS-400</div>
+        <div class="arch-step-t">Evidence & Forensics</div>
+        <div class="arch-step-d">SHA-256 sealed manifests, immutable case timeline, replayable decision record</div>
+      </div>
+      <div class="arch-step">
+        <div class="arch-step-n">ZAIS-500</div>
+        <div class="arch-step-t">RBI Regulatory Mapping</div>
+        <div class="arch-step-d">Every control maps to specific RBI requirements — audit-ready at all times</div>
+      </div>
+      <div class="arch-step">
+        <div class="arch-step-n">ZAIS-600</div>
+        <div class="arch-step-t">Quality Scoring</div>
+        <div class="arch-step-d">Standardised investigation quality metrics across evidence, timeliness, completeness</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ════════════════════ SIGNAL LIBRARY ════════════════════ -->
+<section class="sec" id="signals">
+  <div class="wrap">
+    <div class="sec-tag reveal">ZAIS-100</div>
+    <h2 class="sec-h reveal">Signal Library — 42 deterministic signals</h2>
+    <p class="sec-sub reveal">Every signal has a defined data type, risk weight, trigger condition, and RBI alignment. No black boxes.</p>
+
+    <div class="sig-filters reveal" id="sig-filters">
+      <button class="sig-filter active" onclick="filterSigs('ALL')">All <span id="count-ALL" style="opacity:0.6;">42</span></button>
+      <button class="sig-filter" onclick="filterSigs('DEVICE')" style="border-color:rgba(91,142,245,0.3);">Device <span id="count-DEVICE" style="opacity:0.6;">8</span></button>
+      <button class="sig-filter" onclick="filterSigs('NETWORK')" style="border-color:rgba(167,139,250,0.3);">Network <span id="count-NETWORK" style="opacity:0.6;">8</span></button>
+      <button class="sig-filter" onclick="filterSigs('BEHAVIORAL')" style="border-color:rgba(245,200,66,0.3);">Behavioural <span id="count-BEHAVIORAL" style="opacity:0.6;">6</span></button>
+      <button class="sig-filter" onclick="filterSigs('TRANSACTIONAL')" style="border-color:rgba(45,212,191,0.3);">Transactional <span id="count-TRANSACTIONAL" style="opacity:0.6;">10</span></button>
+      <button class="sig-filter" onclick="filterSigs('SESSION')" style="border-color:rgba(244,114,182,0.3);">Session <span id="count-SESSION" style="opacity:0.6;">5</span></button>
+      <button class="sig-filter" onclick="filterSigs('AUTH')" style="border-color:rgba(232,149,58,0.3);">Auth <span id="count-AUTH" style="opacity:0.6;">5</span></button>
+    </div>
+    <p class="sig-count" id="sig-count-label">Showing all 42 signals across 6 domains</p>
+    <div class="sig-grid" id="sig-grid"></div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ════════════════════ ATTACK GRAPH ════════════════════ -->
+<section class="sec" id="attack-graph">
+  <div class="wrap">
+    <div class="sec-tag reveal">Attack Graph</div>
+    <h2 class="sec-h reveal">How a SIM Swap ATO unfolds</h2>
+    <p class="sec-sub reveal">ZAIS reconstructs the full attack chain from triggered signals — giving investigators and regulators a single narrative of what happened, in order.</p>
+    <div class="attack-chain">
+      <div class="chain-nodes" id="chain-nodes">
+        <div class="chain-node" style="--node-color:#e05252;--node-rgb:224,82,82;">
+          <div class="chain-icon">📡</div>
+          <div class="chain-content">
+            <div class="chain-label" style="color:#e05252;">Initial Access</div>
+            <div class="chain-title">SIM Swap / Telecom Profile Change</div>
+            <div class="chain-sig">SIG-NET-006 · w=0.96</div>
+          </div>
+        </div>
+        <div class="chain-node" style="--node-color:#E8953A;--node-rgb:232,149,58;">
+          <div class="chain-icon">🔑</div>
+          <div class="chain-content">
+            <div class="chain-label" style="color:#E8953A;">Credential Compromise</div>
+            <div class="chain-title">Password Reset on New Unrecognised Device</div>
+            <div class="chain-sig">SIG-AUTH-002 · w=0.82</div>
+          </div>
+        </div>
+        <div class="chain-node" style="--node-color:#f5c842;--node-rgb:245,200,66;">
+          <div class="chain-icon">📱</div>
+          <div class="chain-content">
+            <div class="chain-label" style="color:#f5c842;">Device Anomaly</div>
+            <div class="chain-title">Hardware Fingerprint Drift + Behavioural Deviation</div>
+            <div class="chain-sig">SIG-DEV-001 + SIG-BIO-003 · w=0.85/0.68</div>
+          </div>
+        </div>
+        <div class="chain-node" style="--node-color:#a78bfa;--node-rgb:167,139,250;">
+          <div class="chain-icon">🏦</div>
+          <div class="chain-content">
+            <div class="chain-label" style="color:#a78bfa;">Monetisation Setup</div>
+            <div class="chain-title">Limit Increase → New Beneficiary → Probe Transfer</div>
+            <div class="chain-sig">SIG-TRX-008 + SIG-TRX-001 + SIG-TRX-005 · w=0.87/0.79/0.84</div>
+          </div>
+        </div>
+        <div class="chain-node" style="--node-color:#2dd4bf;--node-rgb:45,212,191;">
+          <div class="chain-icon">💸</div>
+          <div class="chain-content">
+            <div class="chain-label" style="color:#2dd4bf;">Execution</div>
+            <div class="chain-title">Dormant Account Awakens — High-Value Transfer</div>
+            <div class="chain-sig">SIG-TRX-007 · w=0.95 · Balance drain detected</div>
+          </div>
+        </div>
+        <div class="chain-node" style="--node-color:#5b8ef5;--node-rgb:91,142,245;">
+          <div class="chain-icon">🐟</div>
+          <div class="chain-content">
+            <div class="chain-label" style="color:#5b8ef5;">Post-Compromise</div>
+            <div class="chain-title">Mule Transfer · Beneficiary Removed to Cover Trail</div>
+            <div class="chain-sig">SIG-TRX-003 + SIG-TRX-010 · w=0.88/0.79</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:0.78rem;color:var(--muted);margin-top:1rem;text-align:center;">
+      This attack chain is reconstructed automatically from triggered signals — not written manually by an analyst. Every node maps to a ZAIS signal with defined weight and RBI alignment.
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ════════════════════ PLAYBOOKS ════════════════════ -->
+<section class="sec" id="playbooks">
+  <div class="wrap">
+    <div class="sec-tag reveal">ZAIS-200</div>
+    <h2 class="sec-h reveal">Investigation Playbooks</h2>
+    <p class="sec-sub reveal">Three attack vectors. Each has a specific signal combination, a step-by-step execution protocol, and defined KPIs. Not guidelines — protocols.</p>
+    <div class="pb-grid">
+      <div class="pb-card reveal">
+        <div class="pb-num">03</div>
+        <div class="pb-tag-top" style="color:#e05252;">PB-03 · SIM Swap</div>
+        <div class="pb-title">Telecom Interception & Network Compromise</div>
+        <div class="pb-body">Triggered by SIG-NET-006 + SIG-TRX-007/009. Covers automated interdiction, OOB verification bypassing the compromised SIM, and cryptographic evidence sealing.</div>
+        <div class="pb-steps">
+          <div class="pb-step">T+0: Telecom metadata pull — IMSI/ICCID vs historical</div>
+          <div class="pb-step">T+2min: Automated account containment + session invalidation</div>
+          <div class="pb-step">T+12min: OOB identity verification (bypass SMS entirely)</div>
+          <div class="pb-step">T+24h: SHA-256 forensic capture + RBI burden-of-proof package</div>
+        </div>
+      </div>
+      <div class="pb-card reveal">
+        <div class="pb-num">04</div>
+        <div class="pb-tag-top" style="color:#E8953A;">PB-04 · Device Malware / RAT</div>
+        <div class="pb-title">Device-Level Exploitation — Malware, RAT, Overlay, Repackaged APK</div>
+        <div class="pb-body">Triggered by SIG-DEV-003/004/007/005. Covers device state triage, immediate transaction rollback, forensic APK and process capture, and OOB-only verification because any in-app challenge is visible to the attacker.</div>
+        <div class="pb-steps">
+          <div class="pb-step">T+0–3min: Device telemetry pull — APK hash, process list, RAT signatures, screen recording API state</div>
+          <div class="pb-step">T+3–10min: Transaction rollback + full session revocation + account freeze. No in-app or SMS OTP — attacker sees both.</div>
+          <div class="pb-step">T+30min: Forensic capture — SHA-256 sealed process list, certificate chain, network connections, accessibility grants</div>
+          <div class="pb-step">T+4h: OOB verification via alternate device (FIDO2) or video KYC — never via compromised device</div>
+          <div class="pb-step">T+24–72h: Device remediation verified (factory reset + fresh install + attestation) before any account restoration</div>
+        </div>
+      </div>
+      <div class="pb-card reveal">
+        <div class="pb-num">05</div>
+        <div class="pb-tag-top" style="color:#a78bfa;">PB-05 · Session Hijack</div>
+        <div class="pb-title">Session Token Theft & Proxy-Assisted Account Takeover</div>
+        <div class="pb-body">Triggered by SIG-SES-001/005/002 + SIG-NET-005/007. Covers full token chain reconstruction — where was the token issued, how was it stolen, and where was it replayed — plus OOB step-up and attacker infrastructure blocking.</div>
+        <div class="pb-steps">
+          <div class="pb-step">T+0–2min: Session state snapshot — issuance context vs current IP/device/geo delta captured</div>
+          <div class="pb-step">T+2–8min: Full token revocation across all sessions + all channels. No in-session step-up — attacker is in the session.</div>
+          <div class="pb-step">T+5–45min: Forensic token provenance chain — issuance → transit → reuse — MITM and proxy infrastructure mapped and sealed</div>
+          <div class="pb-step">T+10min+: OOB step-up via FIDO2 on registered device or email OTP to verified secondary channel</div>
+          <div class="pb-step">T+24h: Attacker ASN/IP range blocklisted. Signal library updated with new proxy fingerprint.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ════════════════════ RBI MAPPING ════════════════════ -->
+<section class="sec" id="rbi">
+  <div class="wrap">
+    <div class="sec-tag reveal">ZAIS-500</div>
+    <h2 class="sec-h reveal">Global Regulatory Alignment</h2>
+    <p class="sec-sub reveal">ZAIS is RBI-primary, globally structured. Every control maps to a global control family first — then to jurisdiction-specific requirements as overlays. RBI is fully mapped. PSD2/SCA and MAS TRM overlays are framework-ready.</p>
+
+    <!-- Jurisdiction status table -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:0.75rem;margin:2rem 0;reveal" class="reveal">
+      <div style="background:var(--bg1);border:1px solid var(--border);border-top:2px solid #3ecf8e;border-radius:10px;padding:1.2rem 1rem;text-align:center;">
+        <div style="font-size:1.4rem;margin-bottom:0.4rem;">🇮🇳</div>
+        <div style="font-size:0.78rem;font-weight:700;color:#fff;margin-bottom:0.25rem;">RBI</div>
+        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#3ecf8e;margin-bottom:0.5rem;">Implemented</div>
+        <div style="font-size:0.72rem;color:var(--muted);line-height:1.5;">Digital Payment Security Controls · Limited Liability · FIU-IND</div>
+      </div>
+      <div style="background:var(--bg1);border:1px solid var(--border);border-top:2px solid #5b8ef5;border-radius:10px;padding:1.2rem 1rem;text-align:center;">
+        <div style="font-size:1.4rem;margin-bottom:0.4rem;">🇪🇺</div>
+        <div style="font-size:0.78rem;font-weight:700;color:#fff;margin-bottom:0.25rem;">PSD2 / SCA</div>
+        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#5b8ef5;margin-bottom:0.5rem;">Architecture Defined</div>
+        <div style="font-size:0.72rem;color:var(--muted);line-height:1.5;">Art. 97 SCA · RTS on SCA &amp; CSC · TRA exemptions · EBA fraud reporting</div>
+      </div>
+      <div style="background:var(--bg1);border:1px solid var(--border);border-top:2px solid #a78bfa;border-radius:10px;padding:1.2rem 1rem;text-align:center;">
+        <div style="font-size:1.4rem;margin-bottom:0.4rem;">🇸🇬</div>
+        <div style="font-size:0.78rem;font-weight:700;color:#fff;margin-bottom:0.25rem;">MAS TRM</div>
+        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#a78bfa;margin-bottom:0.5rem;">Architecture Defined</div>
+        <div style="font-size:0.72rem;color:var(--muted);line-height:1.5;">TRM 2021 · Monitoring &amp; incident response · Audit trail · Board reporting</div>
+      </div>
+      <div style="background:var(--bg1);border:1px solid var(--border);border-top:2px solid #f472b6;border-radius:10px;padding:1.2rem 1rem;text-align:center;">
+        <div style="font-size:1.4rem;margin-bottom:0.4rem;">🇬🇧</div>
+        <div style="font-size:0.78rem;font-weight:700;color:#fff;margin-bottom:0.25rem;">UK APP Fraud</div>
+        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#f472b6;margin-bottom:0.5rem;">Planned</div>
+        <div style="font-size:0.72rem;color:var(--muted);line-height:1.5;">PSR reimbursement scheme · Pay.UK · Gross negligence standard · Burden of proof</div>
+      </div>
+      <div style="background:var(--bg1);border:1px solid var(--border);border-top:2px solid var(--muted);border-radius:10px;padding:1.2rem 1rem;text-align:center;">
+        <div style="font-size:1.4rem;margin-bottom:0.4rem;">🇺🇸</div>
+        <div style="font-size:0.78rem;font-weight:700;color:#fff;margin-bottom:0.25rem;">US Governance</div>
+        <div style="font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;">Planned</div>
+        <div style="font-size:0.72rem;color:var(--muted);line-height:1.5;">OCC · CFPB · FFIEC · FTC · NACHA · Card network fraud guidance</div>
+      </div>
+    </div>
+
+    <!-- Global control families -->
+    <div class="sec-tag reveal" style="margin-top:2rem;">Global Control Families — ZAIS-G100 to ZAIS-G500</div>
+    <p class="reveal" style="font-size:0.85rem;color:var(--muted);margin:0.5rem 0 1.5rem;line-height:1.7;">Every ZAIS signal maps to one of five global control families. Jurisdictions map to these families as overlays — not the other way around. This means adding a new regulator never requires rebuilding the signal library.</p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:0.75rem;" class="reveal">
+      <div style="background:var(--bg1);border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.2rem;">
+        <div style="font-family:monospace;font-size:0.7rem;color:var(--accent);margin-bottom:0.35rem;">ZAIS-G101</div>
+        <div style="font-size:0.9rem;font-weight:700;color:#fff;margin-bottom:0.3rem;">Identity &amp; Authentication Controls</div>
+        <div style="font-size:0.78rem;color:var(--muted);line-height:1.55;">Covers AUTH and BEHAVIORAL signals. Maps to: RBI MFA requirements · PSD2 SCA inherence/possession/knowledge · MAS IAM controls.</div>
+        <div style="margin-top:0.6rem;display:flex;gap:0.4rem;flex-wrap:wrap;">
+          <span style="font-size:0.65rem;background:rgba(62,207,142,0.1);color:#3ecf8e;padding:1px 7px;border-radius:3px;font-weight:600;">RBI ✓</span>
+          <span style="font-size:0.65rem;background:rgba(91,142,245,0.1);color:#5b8ef5;padding:1px 7px;border-radius:3px;font-weight:600;">PSD2 arch</span>
+          <span style="font-size:0.65rem;background:rgba(167,139,250,0.1);color:#a78bfa;padding:1px 7px;border-radius:3px;font-weight:600;">MAS arch</span>
+        </div>
+      </div>
+      <div style="background:var(--bg1);border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.2rem;">
+        <div style="font-family:monospace;font-size:0.7rem;color:var(--accent);margin-bottom:0.35rem;">ZAIS-G201</div>
+        <div style="font-size:0.9rem;font-weight:700;color:#fff;margin-bottom:0.3rem;">Device &amp; Session Integrity Controls</div>
+        <div style="font-size:0.78rem;color:var(--muted);line-height:1.55;">Covers DEVICE, NETWORK, SESSION signals. Maps to: RBI device integrity · PSD2 possession element + TRA · MAS endpoint &amp; session security.</div>
+        <div style="margin-top:0.6rem;display:flex;gap:0.4rem;flex-wrap:wrap;">
+          <span style="font-size:0.65rem;background:rgba(62,207,142,0.1);color:#3ecf8e;padding:1px 7px;border-radius:3px;font-weight:600;">RBI ✓</span>
+          <span style="font-size:0.65rem;background:rgba(91,142,245,0.1);color:#5b8ef5;padding:1px 7px;border-radius:3px;font-weight:600;">PSD2 arch</span>
+          <span style="font-size:0.65rem;background:rgba(167,139,250,0.1);color:#a78bfa;padding:1px 7px;border-radius:3px;font-weight:600;">MAS arch</span>
+        </div>
+      </div>
+      <div style="background:var(--bg1);border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.2rem;">
+        <div style="font-family:monospace;font-size:0.7rem;color:var(--accent);margin-bottom:0.35rem;">ZAIS-G301</div>
+        <div style="font-size:0.9rem;font-weight:700;color:#fff;margin-bottom:0.3rem;">Transaction Monitoring &amp; Fraud Detection</div>
+        <div style="font-size:0.78rem;color:var(--muted);line-height:1.55;">Covers TRANSACTIONAL signals. Maps to: RBI velocity &amp; AML rules · PSD2 TRA thresholds (€100/€250/€500) · MAS transaction monitoring.</div>
+        <div style="margin-top:0.6rem;display:flex;gap:0.4rem;flex-wrap:wrap;">
+          <span style="font-size:0.65rem;background:rgba(62,207,142,0.1);color:#3ecf8e;padding:1px 7px;border-radius:3px;font-weight:600;">RBI ✓</span>
+          <span style="font-size:0.65rem;background:rgba(91,142,245,0.1);color:#5b8ef5;padding:1px 7px;border-radius:3px;font-weight:600;">PSD2 arch</span>
+          <span style="font-size:0.65rem;background:rgba(167,139,250,0.1);color:#a78bfa;padding:1px 7px;border-radius:3px;font-weight:600;">MAS arch</span>
+          <span style="font-size:0.65rem;background:rgba(244,114,182,0.1);color:#f472b6;padding:1px 7px;border-radius:3px;font-weight:600;">UK ~</span>
+        </div>
+      </div>
+      <div style="background:var(--bg1);border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.2rem;">
+        <div style="font-family:monospace;font-size:0.7rem;color:var(--accent);margin-bottom:0.35rem;">ZAIS-G401</div>
+        <div style="font-size:0.9rem;font-weight:700;color:#fff;margin-bottom:0.3rem;">Investigation, Evidence &amp; Explainability</div>
+        <div style="font-size:0.78rem;color:var(--muted);line-height:1.55;">Covers playbooks, SHA-256 manifests, decision replay. Answers: RBI limited liability · UK APP gross negligence standard · MAS audit trail requirements.</div>
+        <div style="margin-top:0.6rem;display:flex;gap:0.4rem;flex-wrap:wrap;">
+          <span style="font-size:0.65rem;background:rgba(62,207,142,0.1);color:#3ecf8e;padding:1px 7px;border-radius:3px;font-weight:600;">RBI ✓</span>
+          <span style="font-size:0.65rem;background:rgba(167,139,250,0.1);color:#a78bfa;padding:1px 7px;border-radius:3px;font-weight:600;">MAS arch</span>
+          <span style="font-size:0.65rem;background:rgba(244,114,182,0.1);color:#f472b6;padding:1px 7px;border-radius:3px;font-weight:600;">UK ~</span>
+        </div>
+      </div>
+      <div style="background:var(--bg1);border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.2rem;">
+        <div style="font-family:monospace;font-size:0.7rem;color:var(--accent);margin-bottom:0.35rem;">ZAIS-G501</div>
+        <div style="font-size:0.9rem;font-weight:700;color:#fff;margin-bottom:0.3rem;">Governance, Liability &amp; Regulatory Assurance</div>
+        <div style="font-size:0.78rem;color:var(--muted);line-height:1.55;">Covers maturity scoring, quality assurance, regulatory reporting. Maps to: RBI board oversight · MAS TRM governance · PSD2 fraud reporting to EBA.</div>
+        <div style="margin-top:0.6rem;display:flex;gap:0.4rem;flex-wrap:wrap;">
+          <span style="font-size:0.65rem;background:rgba(62,207,142,0.1);color:#3ecf8e;padding:1px 7px;border-radius:3px;font-weight:600;">RBI ✓</span>
+          <span style="font-size:0.65rem;background:rgba(91,142,245,0.1);color:#5b8ef5;padding:1px 7px;border-radius:3px;font-weight:600;">PSD2 arch</span>
+          <span style="font-size:0.65rem;background:rgba(167,139,250,0.1);color:#a78bfa;padding:1px 7px;border-radius:3px;font-weight:600;">MAS arch</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RBI detail table — kept for RBI-specific engagements -->
+    <div style="margin-top:2.5rem;" class="reveal">
+      <div class="sec-tag">RBI Mapping Detail — ZAIS-610</div>
+      <p style="font-size:0.82rem;color:var(--muted);margin:0.4rem 0 1rem;line-height:1.6;">Specific RBI requirement to ZAIS control mapping. PSD2 and MAS detail mapping available on request.</p>
+      <table class="rbi-table">
+        <thead>
+          <tr>
+            <th>RBI Requirement</th>
+            <th>ZAIS Control</th>
+            <th>Global Family</th>
+            <th>Signals</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Device &amp; IP anomaly detection (Digital Payment Security Controls)</td>
+            <td><span class="rbi-code">ZAIS-G201</span> Device &amp; Network Domain</td>
+            <td><span class="rbi-code">ZAIS-G201</span></td>
+            <td>SIG-DEV-001 → 008, SIG-NET-001 → 008</td>
+          </tr>
+          <tr>
+            <td>Velocity monitoring for suspicious transaction patterns</td>
+            <td><span class="rbi-code">ZAIS-G301</span> Transactional Domain</td>
+            <td><span class="rbi-code">ZAIS-G301</span></td>
+            <td>SIG-TRX-001, 002, 005, 006, 007, 008</td>
+          </tr>
+          <tr>
+            <td>Behavioural biometrics for account activity monitoring</td>
+            <td><span class="rbi-code">ZAIS-G101</span> Behavioural Domain</td>
+            <td><span class="rbi-code">ZAIS-G101</span></td>
+            <td>SIG-BIO-001 → 006</td>
+          </tr>
+          <tr>
+            <td>Customer limited liability — burden of proof on institution</td>
+            <td><span class="rbi-code">ZAIS-G401</span> Forensic Evidence Model</td>
+            <td><span class="rbi-code">ZAIS-G401</span></td>
+            <td>All signals — sealed in SHA-256 manifest</td>
+          </tr>
+          <tr>
+            <td>SIM swap / telecom profile change monitoring</td>
+            <td><span class="rbi-code">ZAIS-G201</span> SIM Swap trigger (PB-03)</td>
+            <td><span class="rbi-code">ZAIS-G201</span></td>
+            <td>SIG-NET-006 (primary), SIG-AUTH-001 (secondary)</td>
+          </tr>
+          <tr>
+            <td>Explainability of AI/ML fraud decisions</td>
+            <td><span class="rbi-code">ZAIS-G401</span> Explainability Narrative</td>
+            <td><span class="rbi-code">ZAIS-G401</span></td>
+            <td>All — signal weights documented per decision</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="font-size:0.77rem;color:var(--muted);margin-top:1.2rem;padding:0.75rem 1rem;border:1px solid var(--border);border-radius:6px;line-height:1.65;">
+      <strong style="color:var(--text);">Note on Architecture Defined status:</strong> PSD2/SCA and MAS TRM overlays are structurally mapped to ZAIS global control families. Architecture Defined status means the structural mapping to ZAIS global control families is confirmed. Article-level citation mapping is built during client engagement for the specific regulatory profile — this is always implementation-specific. This is the correct sequencing — jurisdiction overlays are always implementation-specific.
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ════════════════════ MATURITY ════════════════════ -->
+<section class="sec" id="maturity">
+  <div class="wrap">
+    <div class="sec-tag reveal">ZAIS-ATO Maturity Index</div>
+    <h2 class="sec-h reveal">Where does your platform stand?</h2>
+    <p class="sec-sub reveal">The ZAIS Maturity Assessment measures your current ATO controls across 5 dimensions and shows exactly where the gaps are. These are illustrative scores — your assessment will reflect your actual setup.</p>
+    <div class="maturity-grid">
+      <div class="mat-card reveal" data-score="72" data-color="#5b8ef5">
+        <div class="mat-score" style="color:#5b8ef5;">—</div>
+        <div class="mat-label">Detection</div>
+        <div class="mat-bar"><div class="mat-fill" style="background:#5b8ef5;"></div></div>
+        <div class="mat-note">Signal coverage vs ZAIS-100</div>
+      </div>
+      <div class="mat-card reveal" data-score="55" data-color="#a78bfa">
+        <div class="mat-score" style="color:#a78bfa;">—</div>
+        <div class="mat-label">Investigation</div>
+        <div class="mat-bar"><div class="mat-fill" style="background:#a78bfa;"></div></div>
+        <div class="mat-note">Playbook adherence + quality</div>
+      </div>
+      <div class="mat-card reveal" data-score="41" data-color="#E8953A">
+        <div class="mat-score" style="color:#E8953A;">—</div>
+        <div class="mat-label">Explainability</div>
+        <div class="mat-bar"><div class="mat-fill" style="background:#E8953A;"></div></div>
+        <div class="mat-note">Decision narrative quality</div>
+      </div>
+      <div class="mat-card reveal" data-score="68" data-color="#3ecf8e">
+        <div class="mat-score" style="color:#3ecf8e;">—</div>
+        <div class="mat-label">Forensics</div>
+        <div class="mat-bar"><div class="mat-fill" style="background:#3ecf8e;"></div></div>
+        <div class="mat-note">Evidence sealing + replay</div>
+      </div>
+      <div class="mat-card reveal" data-score="49" data-color="#f472b6">
+        <div class="mat-score" style="color:#f472b6;">—</div>
+        <div class="mat-label">Governance</div>
+        <div class="mat-bar"><div class="mat-fill" style="background:#f472b6;"></div></div>
+        <div class="mat-note">RBI mapping + audit trail</div>
+      </div>
+    </div>
+    <p style="font-size:0.77rem;color:var(--muted);margin-top:1rem;text-align:center;">
+      Scores above are illustrative — typical NBFC baseline. Your actual maturity assessment will produce real scores from your setup.
+    </p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- ════════════════════ CTA ════════════════════ -->
+<section class="sec" id="assessment">
+  <div class="wrap">
+    <div class="cta-block reveal">
+      <div class="sec-tag" style="margin-bottom:1rem;">Run a ZAIS ATO Maturity Assessment</div>
+      <h2 style="font-family:'Space Grotesk',sans-serif;font-size:clamp(1.6rem,3vw,2.4rem);font-weight:700;letter-spacing:-0.03em;color:#fff;margin-bottom:0.85rem;max-width:600px;margin-left:auto;margin-right:auto;">
+        How mature is your ATO investigation capability?
+      </h2>
+      <p style="font-size:0.92rem;color:var(--muted);line-height:1.75;max-width:540px;margin:0 auto 0.6rem;">
+        This standard reviews ATO detection, investigation, and explainability controls against the ZAIS methodology, producing a maturity score, control gap list, and remediation roadmap.
+      </p>
+      <p style="font-size:0.82rem;color:rgba(200,169,110,0.7);margin-bottom:2rem;">
+        A structured, repeatable methodology — not a one-off assessment
+      </p>
+      <div style="display:flex;flex-wrap:wrap;gap:0.75rem;justify-content:center;margin-bottom:1.5rem;">
+        <a href="https://calendly.com/gururaj-gj-guru/30min" target="_blank" rel="noopener" class="btn-gold">
+          Book a Discovery Call →
+        </a>
+        <a href="/fraud-risk-assessment.html" class="btn-outline">
+          Start with a $599 Snapshot
+        </a>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;max-width:800px;margin:0 auto;text-align:left;">
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:1rem;">
+          <div style="font-size:0.72rem;font-weight:700;color:var(--accent);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.4rem;">You receive</div>
+          <div style="font-size:0.8rem;color:var(--muted);line-height:1.65;">ATO maturity score across 5 dimensions · Top 20 control gaps · Remediation roadmap</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:1rem;">
+          <div style="font-size:0.72rem;font-weight:700;color:var(--accent);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.4rem;">How it works</div>
+          <div style="font-size:0.8rem;color:var(--muted);line-height:1.65;">Review of current controls against ZAIS standard · No production access · CSV exports only</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:1rem;">
+          <div style="font-size:0.72rem;font-weight:700;color:var(--accent);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.4rem;">Who it's for</div>
+          <div style="font-size:0.8rem;color:var(--muted);line-height:1.65;">Digital lenders · NBFCs · BNPL platforms · Fintechs processing ₹5Cr+ monthly</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer style="background:#111318;border-top:1px solid #1e2229;padding:1.2rem 2rem;text-align:center;font-size:0.75rem;color:#50504c;font-family:system-ui,sans-serif;">
+  © 2026 Gururaj G J · Independent open-source project ·
+  <a href="https://github.com/Gururaj-GJ-G" style="color:#c8a96e;text-decoration:none;">GitHub</a> ·
+  <a href="https://www.linkedin.com/in/gururaj-gj-52a062b4/" style="color:#c8a96e;text-decoration:none;">LinkedIn</a>
+</footer>
+
+<script>
+// ── SIGNAL DATA ──────────────────────────────────────────────
+const SIGNALS = [
+  {
+    "id": "SIG-AUTH-001",
+    "name": "MFA / OTP Delivery Channel Anomaly or Bypass Attempt",
+    "domain": "AUTH",
+    "weight": 0.8,
+    "trigger": "OTP or push delivered via channel inconsistent with user history, or high recent failure rate followed by success from n...",
+    "rbi": "Failed authentication alerts, multi-factor parameters, customer notification on failed attempts."
+  },
+  {
+    "id": "SIG-AUTH-002",
+    "name": "Password Reset Without Device Recognition",
+    "domain": "AUTH",
+    "weight": 0.82,
+    "trigger": "Password reset completed from an unrecognized device (never seen in 90-day device history) AND followed within 30 minute...",
+    "rbi": "Credential reset + new device combination; high-risk action after re-authentication."
+  },
+  {
+    "id": "SIG-AUTH-003",
+    "name": "Multiple OTP Requests in Short Window",
+    "domain": "AUTH",
+    "weight": 0.75,
+    "trigger": "3 or more OTP requests within 10 minutes to same MSISDN \u2014 indicates OTP bombing attack, social engineering victim being ...",
+    "rbi": "OTP abuse; MFA bypass attempt indicator; SIM-swap adjacent."
+  },
+  {
+    "id": "SIG-AUTH-004",
+    "name": "Step-Up Challenge Bypassed or Timeout-Exploited",
+    "domain": "AUTH",
+    "weight": 0.89,
+    "trigger": "High-risk action proceeds without completing required step-up challenge OR step-up challenge timed out and action was al...",
+    "rbi": "MFA bypass; step-up authentication control gap; regulatory control failure."
+  },
+  {
+    "id": "SIG-AUTH-005",
+    "name": "Login from Previously Flagged Credential / IP Pair",
+    "domain": "AUTH",
+    "weight": 0.85,
+    "trigger": "Login uses credentials known to be in breach databases (Have I Been Pwned or equivalent) OR from IP previously associate...",
+    "rbi": "Compromised credential indicator; threat intelligence integration."
+  },
+  {
+    "id": "SIG-BIO-001",
+    "name": "Interaction Velocity Anomaly (Non-Human Speed)",
+    "domain": "BEHAVIORAL",
+    "weight": 0.76,
+    "trigger": "Form filled in under 800ms total OR inter-keystroke delta < 20ms uniformly (impossible for human) OR programmatic fill d...",
+    "rbi": "Behavioral biometrics; bot/automation detection under digital payment security controls."
+  },
+  {
+    "id": "SIG-BIO-002",
+    "name": "Anomalies in Keystroke Dynamics",
+    "domain": "BEHAVIORAL",
+    "weight": 0.7,
+    "trigger": "Typing cadence (flight/dwell distributions) falls outside 3 standard deviations of historical rolling 90-day user baseli...",
+    "rbi": "Behavioural biometrics as explicit parameter for suspicious transactional behaviour."
+  },
+  {
+    "id": "SIG-BIO-003",
+    "name": "Touch / Pointer Dynamics + Navigation Anomaly",
+    "domain": "BEHAVIORAL",
+    "weight": 0.68,
+    "trigger": "Touch or pointer interaction patterns (speed, pressure, path curvature, hesitation) deviate significantly from user base...",
+    "rbi": "Behavioural biometrics for fraud detection and customer experience balance."
+  },
+  {
+    "id": "SIG-BIO-004",
+    "name": "Copy-Paste in Credential / OTP Fields",
+    "domain": "BEHAVIORAL",
+    "weight": 0.61,
+    "trigger": "Paste event detected in password or OTP field \u2014 elevated risk indicator for credential-sharing, phishing kit auto-fill, ...",
+    "rbi": "Social engineering / vishing detection; OTP sharing indicator."
+  },
+  {
+    "id": "SIG-BIO-005",
+    "name": "Extended Inactivity Followed by High-Value Action",
+    "domain": "BEHAVIORAL",
+    "weight": 0.69,
+    "trigger": "Session inactive for > 8 minutes then immediately performs high-value or irreversible action (beneficiary add, transfer,...",
+    "rbi": "Session anomaly; re-authentication trigger for high-risk actions."
+  },
+  {
+    "id": "SIG-BIO-006",
+    "name": "Non-Human Scroll / Navigation Pattern",
+    "domain": "BEHAVIORAL",
+    "weight": 0.67,
+    "trigger": "Scroll events show perfect linearity (programmatic) OR mouse movement entropy below 0.15 (non-human) OR page navigation ...",
+    "rbi": "Bot / automation detection; behavioral biometrics baseline deviation."
+  },
+  {
+    "id": "SIG-DEV-001",
+    "name": "Hardware Fingerprint Drift",
+    "domain": "DEVICE",
+    "weight": 0.85,
+    "trigger": "Hardware hash or key attributes (concurrency, memory, canvas) drift from user's established 90-day baseline while User-A...",
+    "rbi": "Behavioral biometrics, IP/device anomaly detection under fraud rules parameterization."
+  },
+  {
+    "id": "SIG-DEV-002",
+    "name": "Emulator or Virtualization Detected",
+    "domain": "DEVICE",
+    "weight": 0.92,
+    "trigger": "Attestation fails or virtualization indicators present (common in fraud farms, automated bots, or RAT-controlled virtual...",
+    "rbi": "New account / high risk parameters, transaction origination from point of compromise or suspicious i..."
+  },
+  {
+    "id": "SIG-DEV-003",
+    "name": "Accessibility Service / Overlay Abuse",
+    "domain": "DEVICE",
+    "weight": 0.88,
+    "trigger": "Accessibility services or screen overlay active during authenticated session, especially combined with high-frequency UI...",
+    "rbi": "Behavioral biometrics and device integrity under digital payment security controls."
+  },
+  {
+    "id": "SIG-DEV-004",
+    "name": "Remote Access Tool (RAT) / Screen Sharing Active",
+    "domain": "DEVICE",
+    "weight": 0.95,
+    "trigger": "Known remote desktop or screen mirroring tool process or active connection detected during or immediately preceding high...",
+    "rbi": "Fraud analysis, suspicious transactional behaviour detection."
+  },
+  {
+    "id": "SIG-DEV-005",
+    "name": "Root / Jailbreak Detected",
+    "domain": "DEVICE",
+    "weight": 0.91,
+    "trigger": "Device attestation fails basic integrity or root binaries detected on device used for auth or transaction.",
+    "rbi": "Device compromise indicator; mandatory detection under RBI Digital Payment Security Controls for app..."
+  },
+  {
+    "id": "SIG-DEV-006",
+    "name": "Developer Mode / USB Debugging Active",
+    "domain": "DEVICE",
+    "weight": 0.72,
+    "trigger": "Developer options or USB debugging active on device during sensitive transaction or profile change. Elevated weight when...",
+    "rbi": "Device tamper indicator; suspicious infrastructure origin."
+  },
+  {
+    "id": "SIG-DEV-007",
+    "name": "App Integrity Failure / Repackaged APK",
+    "domain": "DEVICE",
+    "weight": 0.94,
+    "trigger": "App signature does not match published certificate or Play Protect scan flags the app. Indicates repackaged/trojanized v...",
+    "rbi": "App tampering / malware indicator; point-of-compromise detection."
+  },
+  {
+    "id": "SIG-DEV-008",
+    "name": "Screen Recording / Screen Capture Active During Session",
+    "domain": "DEVICE",
+    "weight": 0.88,
+    "trigger": "Screen recording, screen casting, or MediaProjection API active during session involving credential entry, OTP display, ...",
+    "rbi": "Device compromise; point-of-capture fraud; screen scraping of sensitive financial data."
+  },
+  {
+    "id": "SIG-NET-001",
+    "name": "Impossible Geo-Velocity / Time-Zone Anomaly",
+    "domain": "NETWORK",
+    "weight": 0.75,
+    "trigger": "Physical distance between consecutive authentications impossible within observed time delta (e.g., Bengaluru to Frankfur...",
+    "rbi": "Geo-locations, time zones, IP address origin under suspicious behaviour rules."
+  },
+  {
+    "id": "SIG-NET-002",
+    "name": "High-Risk Geolocation / Sanctioned Territory",
+    "domain": "NETWORK",
+    "weight": 0.78,
+    "trigger": "Session IP resolves to sanctioned country OR RBI-flagged high-fraud geography AND differs from account registration addr...",
+    "rbi": "Geo/IP anomaly detection; cross-border transaction monitoring under FEMA and RBI digital payment fra..."
+  },
+  {
+    "id": "SIG-NET-003",
+    "name": "Known Fraud Infrastructure / Blocklisted ASN",
+    "domain": "NETWORK",
+    "weight": 0.83,
+    "trigger": "Source ASN appears on maintained fraud infrastructure blocklist OR classified as hosting/datacenter with prior fraud inc...",
+    "rbi": "Transaction origination from suspicious infrastructure; IP risk parameterization under fraud rules."
+  },
+  {
+    "id": "SIG-NET-004",
+    "name": "Datacenter / Hosting ASN Origin",
+    "domain": "NETWORK",
+    "weight": 0.9,
+    "trigger": "Session source IP resolves to enterprise hosting / datacenter infrastructure rather than residential, mobile, or known c...",
+    "rbi": "IP address origin (unusual patterns, prohibited zones / rogue IPs), behavioural parameters."
+  },
+  {
+    "id": "SIG-NET-005",
+    "name": "Proxy / VPN / Anonymizer + Residential Mismatch",
+    "domain": "NETWORK",
+    "weight": 0.82,
+    "trigger": "Proxy/VPN detected AND current network type inconsistent with user's 90-day historical profile (e.g., always residential...",
+    "rbi": "IP origin anomalies, transaction from point of compromise indicators."
+  },
+  {
+    "id": "SIG-NET-006",
+    "name": "Recent Telecom Profile Change / SIM Swap Indicator",
+    "domain": "NETWORK",
+    "weight": 0.96,
+    "trigger": "IMSI or SIM profile change detected within configurable window (default 24-72h) of authentication event or high-value tr...",
+    "rbi": "Transaction to mobile numbers with prior vishing/fraud records, suspicious behaviour parameters."
+  },
+  {
+    "id": "SIG-NET-007",
+    "name": "Tor Exit Node / Dark Web Infrastructure",
+    "domain": "NETWORK",
+    "weight": 0.97,
+    "trigger": "Session IP matches current or recent Tor exit node list. Near-automatic escalation \u2014 legitimate customer transactions fr...",
+    "rbi": "Anonymizer/privacy tool detection; suspicious infrastructure origin; maximum friction or block recom..."
+  },
+  {
+    "id": "SIG-NET-008",
+    "name": "DNS Hijacking / Malicious Resolver Detected",
+    "domain": "NETWORK",
+    "weight": 0.86,
+    "trigger": "Device DNS resolver is neither the ISP default nor a known legitimate resolver (Google, Cloudflare, Quad9), OR DNS respo...",
+    "rbi": "Network-level MITM indicator; infrastructure compromise; suspicious routing anomaly under cyber secu..."
+  },
+  {
+    "id": "SIG-SES-001",
+    "name": "Session Token / Cookie Provenance Anomaly",
+    "domain": "SESSION",
+    "weight": 0.89,
+    "trigger": "Active session token was issued from different device fingerprint or geo than current usage context, or token reuse / co...",
+    "rbi": "Session security, authentication anomaly detection under digital payment controls."
+  },
+  {
+    "id": "SIG-SES-002",
+    "name": "Concurrent Session from Different Geography",
+    "domain": "SESSION",
+    "weight": 0.88,
+    "trigger": "Two or more active sessions for the same account from different countries or cities > 300km apart simultaneously, or imp...",
+    "rbi": "Concurrent session anomaly; geographic velocity; session security control."
+  },
+  {
+    "id": "SIG-SES-003",
+    "name": "Anomalously Short Session Duration for Complex Action",
+    "domain": "SESSION",
+    "weight": 0.71,
+    "trigger": "High-complexity action (beneficiary add + transfer, limit change + transfer) completed in < 45 seconds from session star...",
+    "rbi": "Behavioral speed anomaly; bot/automation indicator."
+  },
+  {
+    "id": "SIG-SES-004",
+    "name": "Multiple Failed Sessions Before Successful Login",
+    "domain": "SESSION",
+    "weight": 0.73,
+    "trigger": "3 or more failed login attempts from same or different IPs within 60 minutes preceding a successful login \u2014 credential s...",
+    "rbi": "Authentication anomaly; brute force / credential stuffing indicator; lockout policy compliance."
+  },
+  {
+    "id": "SIG-SES-005",
+    "name": "Session Token Replay / Cross-Context Reuse",
+    "domain": "SESSION",
+    "weight": 0.92,
+    "trigger": "Valid session token presented from IP address or device fingerprint materially different from the session in which it wa...",
+    "rbi": "Session hijack indicator; token security; re-authentication trigger."
+  },
+  {
+    "id": "SIG-TRX-001",
+    "name": "First Transaction to New Beneficiary Above Threshold",
+    "domain": "TRANSACTIONAL",
+    "weight": 0.79,
+    "trigger": "Beneficiary added within last 24 hours AND first transaction to that beneficiary exceeds institution threshold (default:...",
+    "rbi": "Velocity check on new beneficiary additions; cooling-off period compliance under RBI digital payment..."
+  },
+  {
+    "id": "SIG-TRX-002",
+    "name": "Round Number / Threshold-Avoidance Transaction Pattern",
+    "domain": "TRANSACTIONAL",
+    "weight": 0.62,
+    "trigger": "Transaction amount is a round number (0 paise) AND within 5% below a regulatory reporting threshold (\u20b910L, \u20b92L, \u20b950K) OR...",
+    "rbi": "Structuring / layering indicator; AML transaction monitoring; RBI STR filing threshold."
+  },
+  {
+    "id": "SIG-TRX-003",
+    "name": "High-Risk Counterparty / Receiving Account",
+    "domain": "TRANSACTIONAL",
+    "weight": 0.88,
+    "trigger": "Receiving account / VPA appears on internal mule database OR has prior fraud complaints OR account < 30 days old receivi...",
+    "rbi": "Counter-party risk; mule account detection; FIU-IND reporting obligations."
+  },
+  {
+    "id": "SIG-TRX-004",
+    "name": "Transaction Outside Established Time Pattern",
+    "domain": "TRANSACTIONAL",
+    "weight": 0.58,
+    "trigger": "Transaction occurs outside customer's established 90-day active hour window (e.g., customer always transacts 9am\u20139pm, tr...",
+    "rbi": "Behavioral baseline deviation; time-of-day risk parameterization under fraud rules."
+  },
+  {
+    "id": "SIG-TRX-005",
+    "name": "Micro-Transaction Probe Before Large Transfer",
+    "domain": "TRANSACTIONAL",
+    "weight": 0.84,
+    "trigger": "Transaction of \u2264 \u20b91 (or configured micro-amount) to a new beneficiary followed within 300 seconds by transaction > \u20b910,0...",
+    "rbi": "Suspicious transaction pattern; velocity + amount combination rule."
+  },
+  {
+    "id": "SIG-TRX-006",
+    "name": "Account Balance Draining Pattern",
+    "domain": "TRANSACTIONAL",
+    "weight": 0.91,
+    "trigger": "Single session transacts > 75% of available account balance to one or more new beneficiaries within 30 minutes.",
+    "rbi": "Velocity; unusual depletion pattern; AML layering indicator."
+  },
+  {
+    "id": "SIG-TRX-007",
+    "name": "Dormant Velocity Awakening",
+    "domain": "TRANSACTIONAL",
+    "weight": 0.95,
+    "trigger": "High-value movement occurs within short window (e.g., 180s) of profile modification or after prolonged inactivity (>60 d...",
+    "rbi": "Transaction velocity (fund transfers, adding new beneficiaries) in short period, especially new/ dor..."
+  },
+  {
+    "id": "SIG-TRX-008",
+    "name": "Payment Limit Increase Immediately Before Transfer",
+    "domain": "TRANSACTIONAL",
+    "weight": 0.87,
+    "trigger": "Transaction limit increased AND first transaction exceeding the old limit occurs within 60 minutes of the limit change.",
+    "rbi": "Profile change + velocity combination; high-risk action sequencing."
+  },
+  {
+    "id": "SIG-TRX-009",
+    "name": "Beneficiary Velocity Spike",
+    "domain": "TRANSACTIONAL",
+    "weight": 0.87,
+    "trigger": "Multiple new beneficiaries added in short window followed by or concurrent with outbound transfers, especially when comb...",
+    "rbi": "Adding new beneficiaries velocity parameter; high risk MCC or payee patterns."
+  },
+  {
+    "id": "SIG-TRX-010",
+    "name": "Rapid Beneficiary Removal After Transfer",
+    "domain": "TRANSACTIONAL",
+    "weight": 0.79,
+    "trigger": "Beneficiary removed within 30 minutes of successful transfer to that beneficiary \u2014 attempt to destroy evidence of the tr...",
+    "rbi": "Evidence tampering indicator; suspicious post-transaction behavior; audit trail integrity."
+  }
+];
+
+const DOMAIN_COLORS = {
+  DEVICE:'#5b8ef5', NETWORK:'#a78bfa', BEHAVIORAL:'#f5c842',
+  TRANSACTIONAL:'#2dd4bf', SESSION:'#f472b6', AUTH:'#E8953A'
+};
+
+// ── RENDER SIGNAL GRID ────────────────────────────────────────
+function renderSigs(domain) {
+  const grid = document.getElementById('sig-grid');
+  const filtered = domain === 'ALL' ? SIGNALS : SIGNALS.filter(s => s.domain === domain);
+  document.getElementById('sig-count-label').textContent =
+    domain === 'ALL' ? 'Showing all 42 signals across 6 domains' :
+    `Showing ${filtered.length} ${domain} signals`;
+
+  grid.innerHTML = filtered.map(s => {
+    const w = s.weight;
+    const wClass = w >= 0.85 ? '' : w >= 0.70 ? 'med' : 'low';
+    const wLabel = Math.round(w * 100);
+    return `<div class="sig-card">
+      <div class="sig-card-header">
+        <span class="sig-id">${s.id}</span>
+        <span class="sig-weight ${wClass}">w=${wLabel}</span>
+      </div>
+      <div class="sig-name">${s.name}</div>
+      <div class="sig-trigger">${s.trigger}</div>
+      <div class="sig-domain-badge dom-${s.domain}">${s.domain}</div>
+    </div>`;
+  }).join('');
+}
+
+function filterSigs(domain) {
+  document.querySelectorAll('.sig-filter').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  renderSigs(domain);
+}
+
+renderSigs('ALL');
+
+// ── HERO CANVAS — SIGNAL PARTICLE NETWORK ────────────────────
+(function() {
+  const c = document.getElementById('hero-canvas');
+  if (!c) return;
+  const x = c.getContext('2d');
+  let W, H, nodes = [], frame = 0, pulses = [];
+
+  const DOMAIN_LIST = ['DEVICE','NETWORK','BEHAVIORAL','TRANSACTIONAL','SESSION','AUTH'];
+  const COLORS = ['#5b8ef5','#a78bfa','#f5c842','#2dd4bf','#f472b6','#E8953A'];
+
+  function resize() {
+    const hero = document.getElementById('hero');
+    const r = hero.getBoundingClientRect();
+    W = c.width = r.width; H = c.height = r.height;
+  }
+
+  function initNodes() {
+    nodes = [];
+    const n = Math.max(20, Math.floor(W * H / 12000));
+    for (let i = 0; i < n; i++) {
+      const di = Math.floor(Math.random() * 6);
+      nodes.push({
+        x: Math.random() * W, y: Math.random() * H,
+        vx: (Math.random() - 0.5) * 0.2, vy: (Math.random() - 0.5) * 0.2,
+        r: Math.random() * 2 + 1.5,
+        color: COLORS[di], domain: DOMAIN_LIST[di],
+        alpha: 0, pulse: Math.random() * Math.PI * 2,
+        flagged: false, flagAlpha: 0
+      });
+    }
+  }
+
+  function tick() {
+    frame++;
+    x.clearRect(0, 0, W, H);
+    nodes.forEach(n => {
+      n.x += n.vx; n.y += n.vy;
+      if (n.x < 0 || n.x > W) n.vx *= -1;
+      if (n.y < 0 || n.y > H) n.vy *= -1;
+      n.alpha = Math.min(1, n.alpha + 0.02);
+      n.pulse += 0.03;
+    });
+    // Edges
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i+1; j < nodes.length; j++) {
+        const a = nodes[i], b = nodes[j];
+        const dx = a.x-b.x, dy = a.y-b.y, d = Math.sqrt(dx*dx+dy*dy);
+        if (d < 120) {
+          x.beginPath(); x.moveTo(a.x, a.y); x.lineTo(b.x, b.y);
+          const al = (1 - d/120) * 0.12;
+          x.strokeStyle = `rgba(200,169,110,${al})`;
+          x.lineWidth = 0.6; x.stroke();
+        }
+      }
+    }
+    // Nodes
+    nodes.forEach(n => {
+      const grd = x.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r*3);
+      const hx = n.color.slice(1);
+      grd.addColorStop(0, `rgba(${parseInt(hx.slice(0,2),16)},${parseInt(hx.slice(2,4),16)},${parseInt(hx.slice(4,6),16)},0.2)`);
+      grd.addColorStop(1, 'transparent');
+      x.beginPath(); x.arc(n.x, n.y, n.r*3, 0, Math.PI*2);
+      x.fillStyle = grd; x.fill();
+      x.beginPath(); x.arc(n.x, n.y, n.r, 0, Math.PI*2);
+      x.fillStyle = n.color + 'aa'; x.fill();
+    });
+    requestAnimationFrame(tick);
+  }
+
+  resize();
+  initNodes();
+  window.addEventListener('resize', () => { resize(); initNodes(); }, {passive:true});
+  requestAnimationFrame(tick);
+})();
+
+// ── ARCH CANVAS — SIGNAL PIPELINE ────────────────────────────
+(function() {
+  const c = document.getElementById('arch-canvas');
+  if (!c) return;
+  const x = c.getContext('2d');
+  let W, H = 220, frame = 0, particles = [], started = false;
+
+  const STAGES = [
+    {x:0.07, label:'ATO\nEVENT', color:'#e05252'},
+    {x:0.22, label:'SIGNALS', color:'#5b8ef5'},
+    {x:0.37, label:'PLAYBOOK', color:'#a78bfa'},
+    {x:0.53, label:'EXPLAINABILITY', color:'#c8a96e'},
+    {x:0.70, label:'EVIDENCE', color:'#3ecf8e'},
+    {x:0.85, label:'RBI AUDIT', color:'#E8953A'},
+  ];
+
+  function resize() {
+    const w = c.parentElement.getBoundingClientRect().width;
+    W = c.width = Math.max(w, 100); c.height = H;
+  }
+
+  function spawnParticle() {
+    particles.push({
+      stage: 0, prog: 0,
+      speed: 0.008 + Math.random() * 0.005,
+      color: STAGES[Math.floor(Math.random() * 5) + 1].color
+    });
+  }
+
+  function drawNode(sx, sy, label, color) {
+    x.save();
+    x.shadowColor = color; x.shadowBlur = 12;
+    x.beginPath(); x.arc(sx, sy, 18, 0, Math.PI*2);
+    x.fillStyle = color + '20'; x.fill();
+    x.strokeStyle = color; x.lineWidth = 1.5; x.stroke();
+    x.shadowBlur = 0; x.restore();
+    x.fillStyle = color; x.font = 'bold 7px Inter,sans-serif'; x.textAlign = 'center';
+    label.split('\n').forEach((l,i) => x.fillText(l, sx, sy + H*0.38 + i*10));
+  }
+
+  function tick() {
+    frame++;
+    x.clearRect(0, 0, W, H);
+    x.fillStyle = '#0d1018'; x.fillRect(0, 0, W, H);
+
+    if (frame % 30 === 0) spawnParticle();
+
+    // Connection lines
+    for (let i=0; i<STAGES.length-1; i++) {
+      x.beginPath();
+      x.moveTo(STAGES[i].x*W, H/2);
+      x.lineTo(STAGES[i+1].x*W, H/2);
+      x.strokeStyle = 'rgba(200,169,110,0.08)';
+      x.lineWidth = 1; x.setLineDash([3,6]); x.stroke(); x.setLineDash([]);
+    }
+
+    // Particles
+    particles = particles.filter(p => {
+      p.prog = Math.min(1, p.prog + p.speed);
+      if (p.prog >= 1 && p.stage < STAGES.length - 2) {
+        p.stage++; p.prog = 0;
+      }
+      const a = STAGES[p.stage], b = STAGES[p.stage + 1] || STAGES[p.stage];
+      const px = a.x*W + (b.x*W - a.x*W)*p.prog;
+      x.save(); x.shadowColor = p.color; x.shadowBlur = 8;
+      x.beginPath(); x.arc(px, H/2, 4, 0, Math.PI*2);
+      x.fillStyle = p.color; x.fill(); x.restore();
+      return !(p.stage >= STAGES.length - 2 && p.prog >= 1);
+    });
+
+    STAGES.forEach(s => drawNode(s.x*W, H/2, s.label, s.color));
+
+    x.fillStyle = 'rgba(200,169,110,0.4)'; x.font = 'bold 9px Inter,sans-serif'; x.textAlign = 'left';
+    x.fillText('ZAIS INVESTIGATION PIPELINE  ·  LIVE FLOW', 12, 18);
+    requestAnimationFrame(tick);
+  }
+
+  function start() {
+    if (started) return; started = true;
+    resize();
+    window.addEventListener('resize', resize, {passive:true});
+    tick();
+  }
+
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(e => { if (e[0].isIntersecting) start(); }, {threshold:0.1}).observe(c);
+  } else window.addEventListener('load', start);
+})();
+
+// ── SCROLL REVEAL ─────────────────────────────────────────────
+(function() {
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('in-view');
+        io.unobserve(e.target);
+      }
+    });
+  }, {threshold: 0.08, rootMargin: '0px 0px -40px 0px'});
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+})();
+
+// ── MATURITY SCORE ANIMATION ──────────────────────────────────
+(function() {
+  const cards = document.querySelectorAll('.mat-card[data-score]');
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      const card = e.target;
+      const target = parseInt(card.dataset.score);
+      const color = card.dataset.color;
+      const scoreEl = card.querySelector('.mat-score');
+      const fillEl = card.querySelector('.mat-fill');
+      let current = 0;
+      const interval = setInterval(() => {
+        current = Math.min(target, current + 2);
+        scoreEl.textContent = current;
+        fillEl.style.width = current + '%';
+        if (current >= target) clearInterval(interval);
+      }, 20);
+      io.unobserve(card);
+    });
+  }, {threshold: 0.3});
+  cards.forEach(c => io.observe(c));
+})();
+</script>
+
+</body>
+</html>
